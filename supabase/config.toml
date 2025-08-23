@@ -1,1 +1,28 @@
 project_id = "vrgmphxnizephwqyduak"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[functions.luma-webhook]
+verify_jwt = false
+
+[functions.enrich-and-score]
+verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.pull-brex-expenses]
+verify_jwt = false
