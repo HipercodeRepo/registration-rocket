@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,143 +8,133 @@ const corsHeaders = {
 
 interface AttendeeData {
   id: string;
-  event_id: string | null;
-  registration_id: string | null;
   name: string;
   email: string;
-  company: string | null;
-  title: string | null;
-  registered_at: string | null;
+  company?: string;
+  title?: string;
 }
 
-// Basic scoring function
+// Calculate lead score based on enriched data
 function calculateLeadScore(person: any, company: any, attendee: AttendeeData): { score: number; reason: string } {
   let score = 0;
-  const notes: string[] = [];
+  const reasons = [];
 
   // Seniority scoring
-  const title = (attendee.title || person?.title || '').toLowerCase();
-  const seniorTitles = ['founder', 'co-founder', 'ceo', 'cto', 'cpo', 'vp', 'head', 'director'];
-  if (seniorTitles.some(t => title.includes(t))) {
+  const title = (person?.title || attendee.title || '').toLowerCase();
+  if (['founder', 'ceo', 'cto', 'vp'].some(role => title.includes(role))) {
     score += 5;
-    notes.push('Senior title');
+    reasons.push('Senior leadership role');
+  } else if (['director', 'head', 'lead'].some(role => title.includes(role))) {
+    score += 3;
+    reasons.push('Management role');
+  } else if (['manager', 'principal', 'senior'].some(role => title.includes(role))) {
+    score += 2;
+    reasons.push('Mid-level role');
   }
 
-  // Company size (from MixRank or SixtyFour)
-  const companySize = company?.employee_count || company?.results?.[0]?.employee_count || 0;
-  if (companySize >= 100) {
+  // Company size scoring (from MixRank or SixtyFour)
+  const employeeCount = company?.employee_count || company?.employees || 0;
+  if (employeeCount >= 1000) {
+    score += 4;
+    reasons.push('Large company (1000+ employees)');
+  } else if (employeeCount >= 100) {
     score += 3;
-    notes.push('Company size ≥ 100');
-  } else if (companySize >= 50) {
+    reasons.push('Medium company (100+ employees)');
+  } else if (employeeCount >= 50) {
     score += 2;
-    notes.push('Company size ≥ 50');
+    reasons.push('Growing company (50+ employees)');
   }
 
   // Industry targeting
-  const industry = (company?.industry || company?.results?.[0]?.industry || '').toLowerCase();
-  const targetIndustries = ['fintech', 'saas', 'developer tools', 'ai', 'technology'];
-  if (targetIndustries.some(i => industry.includes(i))) {
+  const industry = (company?.industry || '').toLowerCase();
+  const targetIndustries = ['fintech', 'saas', 'technology', 'software', 'ai', 'machine learning', 'data'];
+  if (targetIndustries.some(target => industry.includes(target))) {
     score += 2;
-    notes.push('Target industry');
+    reasons.push('Target industry');
   }
 
-  // Professional email domain (not gmail/yahoo)
-  const domain = attendee.email.split('@')[1] || '';
-  if (!['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'].some(d => domain.includes(d))) {
-    score += 2;
-    notes.push('Business domain');
-  }
-
-  // Social verification
-  if (person?.linkedin_url || person?.socials?.linkedin) {
+  // Professional email domain check
+  const emailDomain = attendee.email.split('@')[1];
+  const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+  if (!personalDomains.includes(emailDomain)) {
     score += 1;
-    notes.push('Verified LinkedIn');
+    reasons.push('Professional email domain');
   }
 
-  return { score: Math.min(score, 10), reason: notes.join(', ') };
+  // Social/professional verification
+  if (person?.linkedin_url || person?.twitter_url) {
+    score += 1;
+    reasons.push('Social profile verified');
+  }
+
+  // Revenue/funding info bonus
+  if (company?.revenue || company?.funding) {
+    score += 1;
+    reasons.push('Revenue/funding data available');
+  }
+
+  return {
+    score: Math.min(score, 10), // Cap at 10
+    reason: reasons.join(', ') || 'Basic profile information'
+  };
 }
 
-async function sixtyfourEnrichLead(input: {
-  name?: string;
-  email?: string;
-  company?: string;
-}) {
+// SixtyFour API enrichment
+async function sixtyfourEnrichLead(input: { name?: string; email?: string; company?: string }) {
   const apiKey = Deno.env.get('SIXTYFOUR_KEY');
-  if (!apiKey) throw new Error('SIXTYFOUR_KEY not set');
-  
-  const res = await fetch('https://api.sixtyfour.ai/enrich/lead', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-  
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`SixtyFour lead enrich failed ${res.status}: ${text}`);
+  if (!apiKey) {
+    console.warn('SixtyFour API key not configured');
+    return null;
   }
-  return res.json();
+
+  try {
+    const response = await fetch('https://api.sixtyfour.ai/enrich/lead', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(input)
+    });
+
+    if (!response.ok) {
+      console.error('SixtyFour API error:', response.status, await response.text());
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('SixtyFour enrichment failed:', error);
+    return null;
+  }
 }
 
-async function sixtyfourEnrichCompany(input: {
-  domain?: string;
-  company?: string;
-}) {
-  const apiKey = Deno.env.get('SIXTYFOUR_KEY');
-  if (!apiKey) throw new Error('SIXTYFOUR_KEY not set');
-  
-  const res = await fetch('https://api.sixtyfour.ai/enrich/company', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-  
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`SixtyFour company enrich failed ${res.status}: ${text}`);
-  }
-  return res.json();
-}
-
+// MixRank API for company data
 async function mixrankCompanyByDomain(domain: string) {
   const apiKey = Deno.env.get('MIXRANK_API_KEY');
-  if (!apiKey) throw new Error('MIXRANK_API_KEY not set');
-  
-  const res = await fetch(`https://api.mixrank.com/v1/companies/search?domain=${encodeURIComponent(domain)}`, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`MixRank domain search failed ${res.status}: ${text}`);
+  if (!apiKey) {
+    console.warn('MixRank API key not configured');
+    return null;
   }
-  return res.json();
-}
 
-async function mixrankCompanyByName(q: string) {
-  const apiKey = Deno.env.get('MIXRANK_API_KEY');
-  if (!apiKey) throw new Error('MIXRANK_API_KEY not set');
-  
-  const res = await fetch(`https://api.mixrank.com/v1/companies/search?q=${encodeURIComponent(q)}`, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`MixRank name search failed ${res.status}: ${text}`);
+  try {
+    const response = await fetch(`https://api.mixrank.com/v3/companies/search?domain=${domain}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error('MixRank API error:', response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return data.results?.[0] || null;
+  } catch (error) {
+    console.error('MixRank enrichment failed:', error);
+    return null;
   }
-  return res.json();
 }
 
 serve(async (req) => {
@@ -154,171 +144,130 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Parse request
     const { attendee_id } = await req.json();
     console.log('Enriching attendee:', attendee_id);
 
-    // 1) Load attendee
-    const { data: attendee, error: attErr } = await supabase
+    // Fetch attendee data
+    const { data: attendee, error: attendeeError } = await supabase
       .from('attendees')
       .select('*')
       .eq('id', attendee_id)
       .single();
 
-    if (attErr || !attendee) {
-      throw new Error('Attendee not found');
+    if (attendeeError || !attendee) {
+      console.error('Attendee not found:', attendeeError);
+      return new Response(
+        JSON.stringify({ error: 'Attendee not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // 2) SixtyFour lead enrichment
-    const person = await sixtyfourEnrichLead({
+    console.log('Processing attendee:', attendee.name, attendee.email);
+
+    // Enrich with SixtyFour
+    const sixtyfourData = await sixtyfourEnrichLead({
       name: attendee.name,
       email: attendee.email,
-      company: attendee.company ?? undefined,
-    }).catch(err => {
-      console.warn('SixtyFour person enrichment failed:', err);
-      return null;
+      company: attendee.company
     });
 
-    // 3) SixtyFour company enrich + MixRank lookup
-    const domainFromEmail = attendee.email.split('@')[1] || '';
-    
-    const sfCompany = await sixtyfourEnrichCompany({
-      domain: domainFromEmail || undefined,
-      company: attendee.company ?? undefined,
-    }).catch(err => {
-      console.warn('SixtyFour company enrichment failed:', err);
-      return null;
-    });
-
-    // Try MixRank
-    let mixrank: any = null;
-    const businessDomains = /gmail|yahoo|outlook|icloud|proton/i;
-    
-    if (domainFromEmail && !businessDomains.test(domainFromEmail)) {
-      mixrank = await mixrankCompanyByDomain(domainFromEmail).catch(err => {
-        console.warn('MixRank domain lookup failed:', err);
-        return null;
-      });
-    }
-    
-    if (!mixrank && attendee.company) {
-      mixrank = await mixrankCompanyByName(attendee.company).catch(err => {
-        console.warn('MixRank name lookup failed:', err);
-        return null;
-      });
+    // Enrich with MixRank if we have company domain
+    let mixrankData = null;
+    if (attendee.email) {
+      const emailDomain = attendee.email.split('@')[1];
+      const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+      if (!personalDomains.includes(emailDomain)) {
+        mixrankData = await mixrankCompanyByDomain(emailDomain);
+      }
     }
 
-    // 4) Persist enrichment
-    const { error: upsertErr } = await supabase
+    // Store enrichment data
+    const { error: enrichmentError } = await supabase
       .from('enrichment')
       .upsert({
         attendee_id: attendee.id,
-        person_json: person ?? null,
-        company_json: sfCompany ?? null,
-        mixrank_json: mixrank ?? null,
+        person_json: sixtyfourData,
+        company_json: sixtyfourData?.company || null,
+        mixrank_json: mixrankData,
+        enriched_at: new Date().toISOString()
       });
 
-    if (upsertErr) {
-      throw new Error(`Enrichment upsert failed: ${upsertErr.message}`);
+    if (enrichmentError) {
+      console.error('Error storing enrichment:', enrichmentError);
+    } else {
+      console.log('Enrichment data stored for:', attendee.id);
     }
 
-    // 5) Score
-    const { score, reason } = calculateLeadScore(person, mixrank, attendee);
-    const keyLead = score >= 8;
+    // Calculate lead score
+    const { score, reason } = calculateLeadScore(
+      sixtyfourData,
+      mixrankData || sixtyfourData?.company,
+      attendee
+    );
 
-    // 6) Save score
-    const { error: scoreErr } = await supabase
+    const isKeyLead = score >= 8;
+    console.log(`Lead score for ${attendee.name}: ${score}/10 (${isKeyLead ? 'KEY LEAD' : 'regular'})`);
+
+    // Store lead score
+    const { error: scoreError } = await supabase
       .from('lead_scores')
       .upsert({
         attendee_id: attendee.id,
         score,
         reason,
-        is_key_lead: keyLead,
-        notified_at: null,
-        notification_ref: null,
+        is_key_lead: isKeyLead
       });
 
-    if (scoreErr) {
-      throw new Error(`Score upsert failed: ${scoreErr.message}`);
+    if (scoreError) {
+      console.error('Error storing lead score:', scoreError);
     }
 
-    // 7) Optionally notify via Pylon (if key lead)
-    if (keyLead) {
-      const pylonToken = Deno.env.get('PYLON_TOKEN');
-      if (pylonToken) {
-        try {
-          const notificationBody = {
-            channel: 'slack',
-            destination: '#sales',
-            text: `🚀 New Event Lead: ${attendee.name} (${attendee.title ?? '—'}) @ ${attendee.company ?? '—'} — Score ${score}/10 (${reason})`,
-            metadata: {
-              lead_email: attendee.email,
-              score: score,
-              company: attendee.company ?? null,
-            },
-          };
+    // Trigger notification for key leads
+    if (isKeyLead) {
+      try {
+        const { error: notificationError } = await supabase.functions.invoke('send-notification', {
+          body: { attendee_id: attendee.id }
+        });
 
-          const pylonRes = await fetch('https://api.usepylon.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${pylonToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(notificationBody),
-          });
-
-          if (pylonRes.ok) {
-            const pylonData = await pylonRes.json();
-            // Update notification tracking
-            await supabase
-              .from('lead_scores')
-              .update({ 
-                notified_at: new Date().toISOString(), 
-                notification_ref: pylonData.id 
-              })
-              .eq('attendee_id', attendee.id);
-
-            // Log notification
-            await supabase
-              .from('notifications')
-              .insert({
-                attendee_id: attendee.id,
-                channel: 'slack',
-                destination: '#sales',
-                message: notificationBody.text,
-                pylon_ref: pylonData.id,
-              });
-
-            console.log('Pylon notification sent for key lead:', attendee.id);
-          }
-        } catch (err) {
-          console.warn('Pylon notification failed:', err);
+        if (notificationError) {
+          console.error('Error triggering notification:', notificationError);
+        } else {
+          console.log('Notification triggered for key lead:', attendee.id);
         }
+      } catch (notificationError) {
+        console.error('Failed to trigger notification:', notificationError);
       }
     }
 
-    console.log(`Enrichment complete for ${attendee.id}: score ${score}/10, key lead: ${keyLead}`);
-
     return new Response(
-      JSON.stringify({ 
-        attendee_id: attendee.id, 
-        score, 
-        keyLead, 
-        enriched: true 
+      JSON.stringify({
+        success: true,
+        attendee_id: attendee.id,
+        score,
+        is_key_lead: isKeyLead,
+        enriched: !!(sixtyfourData || mixrankData)
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
 
-  } catch (e: any) {
-    console.error('Enrich and score error:', e);
+  } catch (error) {
+    console.error('Unexpected error in enrichment:', error);
     return new Response(
-      JSON.stringify({ error: e.message }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 })

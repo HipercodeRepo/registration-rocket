@@ -1,18 +1,18 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 interface LumaWebhookPayload {
-  event_id?: string;
-  registration_id?: string;
   name: string;
   email: string;
   company?: string;
   title?: string;
+  event_id?: string;
+  registration_id?: string;
   timestamp?: string;
 }
 
@@ -23,70 +23,76 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Luma webhook received');
-    
+    // Parse the incoming webhook payload
     const payload: LumaWebhookPayload = await req.json();
-    console.log('Webhook payload:', payload);
+    console.log('Received Luma webhook payload:', payload);
 
-    // Basic validation
-    if (!payload?.name || !payload?.email) {
+    // Validate required fields
+    if (!payload.name || !payload.email) {
       return new Response(
-        JSON.stringify({ error: "Missing name or email" }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing required fields: name and email' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    // Insert attendee data
-    const { data: attendee, error: attendeeError } = await supabase
+    // Insert attendee data into database
+    const { data: attendee, error: insertError } = await supabase
       .from('attendees')
       .insert({
-        event_id: payload.event_id ?? 'agentjam-2025',
-        registration_id: payload.registration_id ?? `reg_${Date.now()}`,
+        event_id: payload.event_id || 'agentjam-2025',
+        registration_id: payload.registration_id || `reg_${Date.now()}`,
         name: payload.name,
-        email: payload.email.toLowerCase(),
-        company: payload.company ?? null,
-        title: payload.title ?? null,
-        registered_at: payload.timestamp ?? new Date().toISOString()
+        email: payload.email,
+        company: payload.company || null,
+        title: payload.title || null,
+        registered_at: payload.timestamp || new Date().toISOString()
       })
       .select()
       .single();
 
-    if (attendeeError) {
-      console.error('Error inserting attendee:', attendeeError);
+    if (insertError) {
+      console.error('Error inserting attendee:', insertError);
       return new Response(
-        JSON.stringify({ error: 'Failed to insert attendee' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to insert attendee', details: insertError.message }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    console.log('Attendee inserted:', attendee.id);
+    console.log('Attendee inserted successfully:', attendee.id);
 
-    // Trigger enrichment process
+    // Trigger enrichment and scoring
     try {
-      const enrichResponse = await supabase.functions.invoke('enrich-and-score', {
+      const { data: enrichmentResult, error: enrichmentError } = await supabase.functions.invoke('enrich-and-score', {
         body: { attendee_id: attendee.id }
       });
-      
-      if (enrichResponse.error) {
-        console.error('Error triggering enrichment:', enrichResponse.error);
+
+      if (enrichmentError) {
+        console.error('Error triggering enrichment:', enrichmentError);
       } else {
-        console.log('Enrichment triggered successfully');
+        console.log('Enrichment triggered successfully for attendee:', attendee.id);
       }
-    } catch (enrichError) {
-      console.error('Error calling enrichment function:', enrichError);
+    } catch (enrichmentError) {
+      console.error('Failed to trigger enrichment:', enrichmentError);
+      // Continue execution even if enrichment fails
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         attendee_id: attendee.id,
-        message: 'Registration processed successfully' 
+        message: 'Attendee processed and enrichment triggered'
       }),
       { 
         status: 200, 
@@ -95,13 +101,13 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in luma-webhook:', error);
+    console.error('Unexpected error in Luma webhook:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
-});
+})

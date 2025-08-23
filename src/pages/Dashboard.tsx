@@ -8,6 +8,7 @@ import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
 import { NotificationsLog } from "@/components/dashboard/NotificationsLog";
 import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
+import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { User, Session } from '@supabase/supabase-js';
@@ -79,11 +80,12 @@ const Dashboard = () => {
         <KPICards />
         
         <Tabs defaultValue="attendees" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="tester">Test Webhook</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
           <TabsContent value="attendees" className="space-y-6">
@@ -100,6 +102,10 @@ const Dashboard = () => {
           
           <TabsContent value="tester" className="space-y-6">
             <WebhookTester />
+          </TabsContent>
+          
+          <TabsContent value="reports" className="space-y-6">
+            <ReportGenerator />
           </TabsContent>
         </Tabs>
       </div>

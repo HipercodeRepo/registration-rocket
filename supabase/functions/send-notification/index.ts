@@ -1,29 +1,39 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    
-    const pylonToken = Deno.env.get('PYLON_TOKEN');
-    const { attendee_id } = await req.json();
 
+    // Get Pylon token
+    const pylonToken = Deno.env.get('PYLON_TOKEN');
+    if (!pylonToken) {
+      console.error('Pylon token not configured');
+      return new Response(
+        JSON.stringify({ error: 'Notification service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse request
+    const { attendee_id } = await req.json();
     console.log('Sending notification for attendee:', attendee_id);
 
-    // Get attendee with enrichment and score data
+    // Fetch attendee with enrichment and scoring data
     const { data: attendee, error: attendeeError } = await supabase
       .from('attendees')
       .select(`
@@ -44,108 +54,121 @@ serve(async (req) => {
 
     const leadScore = attendee.lead_scores?.[0];
     if (!leadScore?.is_key_lead) {
+      console.log('Attendee is not a key lead, skipping notification');
       return new Response(
-        JSON.stringify({ message: 'Not a key lead, no notification sent' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          message: 'Not a key lead, notification skipped',
+          sent: false 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get enriched data for better messaging
-    const enrichment = attendee.enrichment?.[0];
-    const companySize = enrichment?.mixrank_json?.companies?.[0]?.employee_count || 
-                      enrichment?.company_json?.employee_count || 'Unknown';
-    const industry = enrichment?.mixrank_json?.companies?.[0]?.industry ||
-                    enrichment?.company_json?.industry || 'Unknown';
-
     // Format notification message
-    const message = `🚀 **New High-Value Event Lead**
-    
-**${attendee.name}** ${attendee.title ? `- ${attendee.title}` : ''}
-📧 ${attendee.email}
-🏢 ${attendee.company || 'Unknown Company'} (${companySize} employees)
-🏭 Industry: ${industry}
-⭐ Lead Score: ${leadScore.score}/10
+    const enrichment = attendee.enrichment?.[0];
+    const companyInfo = enrichment?.mixrank_json || enrichment?.company_json;
+    const personInfo = enrichment?.person_json;
+
+    const message = `🚀 **High-Value Event Lead Alert**
+
+**${attendee.name}** just registered for AgentJam 2025!
+
+**Details:**
+• Title: ${attendee.title || personInfo?.title || 'Not specified'}
+• Company: ${attendee.company || companyInfo?.name || 'Not specified'}
+• Email: ${attendee.email}
+• Lead Score: ${leadScore.score}/10 ⭐
 
 **Why this lead matters:**
 ${leadScore.reason}
 
-*Ready for outreach!* 🎯`;
+**Company Intel:**
+${companyInfo?.employee_count ? `• Size: ${companyInfo.employee_count} employees` : ''}
+${companyInfo?.industry ? `• Industry: ${companyInfo.industry}` : ''}
+${companyInfo?.revenue ? `• Revenue: ${companyInfo.revenue}` : ''}
 
-    let notificationRef = null;
+**Next Steps:**
+• Follow up within 24 hours for best results
+• Personalize outreach using company intel above
+• Schedule demo/meeting while event excitement is high
 
-    // Send Pylon notification
-    if (pylonToken) {
-      try {
-        const pylonResponse = await fetch('https://api.usepylon.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${pylonToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            channel: 'slack',
-            destination: '#sales',
-            text: message,
-            metadata: {
-              lead_email: attendee.email,
-              score: leadScore.score,
-              company_domain: attendee.email.split('@')[1],
-              attendee_id: attendee.id
-            }
-          })
-        });
+*Powered by Event Intelligence Agent*`;
 
-        if (pylonResponse.ok) {
-          const pylonResult = await pylonResponse.json();
-          notificationRef = pylonResult.id || 'sent';
-          console.log('Pylon notification sent successfully');
-        } else {
-          console.error('Pylon notification failed:', await pylonResponse.text());
-        }
-      } catch (pylonError) {
-        console.error('Error sending Pylon notification:', pylonError);
-      }
+    // Send notification via Pylon
+    const pylonResponse = await fetch('https://api.usepylon.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pylonToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        channel: 'slack',
+        destination: '#sales',
+        text: message
+      })
+    });
+
+    let pylonRef = null;
+    if (pylonResponse.ok) {
+      const pylonData = await pylonResponse.json();
+      pylonRef = pylonData.id || pylonData.reference;
+      console.log('Notification sent successfully via Pylon:', pylonRef);
+    } else {
+      console.error('Pylon API error:', pylonResponse.status, await pylonResponse.text());
+      // Continue to log in database even if external notification fails
     }
 
     // Log notification in database
-    const { error: notifyError } = await supabase
+    const { error: notificationError } = await supabase
       .from('notifications')
       .insert({
         attendee_id: attendee.id,
         channel: 'slack',
         destination: '#sales',
         message: message,
-        pylon_ref: notificationRef,
+        pylon_ref: pylonRef,
         sent_at: new Date().toISOString()
       });
 
-    if (notifyError) {
-      console.error('Error logging notification:', notifyError);
+    if (notificationError) {
+      console.error('Error logging notification:', notificationError);
     }
 
     // Update lead score with notification timestamp
-    await supabase
+    const { error: updateError } = await supabase
       .from('lead_scores')
       .update({
         notified_at: new Date().toISOString(),
-        notification_ref: notificationRef
+        notification_ref: pylonRef
       })
       .eq('attendee_id', attendee.id);
 
+    if (updateError) {
+      console.error('Error updating lead score:', updateError);
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        notification_sent: !!notificationRef,
-        message: 'Notification processed successfully' 
+      JSON.stringify({
+        success: true,
+        message: 'Notification processed and logged',
+        sent: pylonResponse.ok,
+        pylon_ref: pylonRef
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
 
   } catch (error) {
-    console.error('Error in send-notification:', error);
+    console.error('Unexpected error in notification:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
-});
+})
