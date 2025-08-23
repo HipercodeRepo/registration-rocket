@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICards } from "@/components/dashboard/KPICards";
 import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
 import { NotificationsLog } from "@/components/dashboard/NotificationsLog";
+import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,10 +79,11 @@ const Dashboard = () => {
         <KPICards />
         
         <Tabs defaultValue="attendees" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="tester">Test Webhook</TabsTrigger>
           </TabsList>
           
           <TabsContent value="attendees" className="space-y-6">
@@ -94,6 +96,10 @@ const Dashboard = () => {
           
           <TabsContent value="expenses" className="space-y-6">
             <ExpensesView />
+          </TabsContent>
+          
+          <TabsContent value="tester" className="space-y-6">
+            <WebhookTester />
           </TabsContent>
         </Tabs>
       </div>
