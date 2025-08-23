@@ -53,15 +53,18 @@ export default {
 				},
 				card: {
 					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					foreground: 'hsl(var(--card-foreground))',
 				},
+				// Dashboard semantic colors per PRD
 				dashboard: {
 					primary: 'hsl(var(--dashboard-primary))',
-					'primary-dark': 'hsl(var(--dashboard-primary-dark))',
-					accent: 'hsl(var(--dashboard-accent))',
+					secondary: 'hsl(var(--dashboard-secondary))', 
 					success: 'hsl(var(--dashboard-success))',
 					warning: 'hsl(var(--dashboard-warning))',
 					danger: 'hsl(var(--dashboard-danger))',
+					background: 'hsl(var(--dashboard-background))',
+					surface: 'hsl(var(--dashboard-surface))',
+					nav: 'hsl(var(--dashboard-nav))',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
