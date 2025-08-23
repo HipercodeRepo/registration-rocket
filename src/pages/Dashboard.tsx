@@ -7,6 +7,7 @@ import { KPICards } from "@/components/dashboard/KPICards";
 import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
 import { NotificationsLog } from "@/components/dashboard/NotificationsLog";
 import { WebhookTester } from "@/components/dashboard/WebhookTester";
+import { ApiTester } from "@/components/dashboard/ApiTester";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,11 +81,12 @@ const Dashboard = () => {
         <KPICards />
         
         <Tabs defaultValue="attendees" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-6 lg:w-[700px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="tester">Test Webhook</TabsTrigger>
+            <TabsTrigger value="api-tester">API Tests</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
@@ -102,6 +104,10 @@ const Dashboard = () => {
           
           <TabsContent value="tester" className="space-y-6">
             <WebhookTester />
+          </TabsContent>
+          
+          <TabsContent value="api-tester" className="space-y-6">
+            <ApiTester />
           </TabsContent>
           
           <TabsContent value="reports" className="space-y-6">
