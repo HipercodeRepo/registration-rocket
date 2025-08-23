@@ -14,13 +14,13 @@ interface TestResult {
   attendee_id?: string;
 }
 
-const sampleAttendees = [
-  {
-    name: "Sarah Chen",
-    email: "sarah.chen@techcorp.com",
-    title: "VP Engineering",
-    company: "TechCorp"
-  },
+  const sampleAttendees = [
+    {
+      name: "Sarah Chen",
+      email: "sarah.chen@stripe.com",
+      title: "VP Engineering", 
+      company: "Stripe"
+    },
   {
     name: "Marcus Rodriguez", 
     email: "m.rodriguez@startup.ai",
