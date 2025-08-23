@@ -7,13 +7,13 @@ const corsHeaders = {
 };
 
 interface LumaWebhookPayload {
-  event_id: string;
-  registration_id: string;
+  event_id?: string;
+  registration_id?: string;
   name: string;
   email: string;
   company?: string;
   title?: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 serve(async (req) => {
@@ -23,26 +23,36 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
 
     console.log('Luma webhook received');
     
     const payload: LumaWebhookPayload = await req.json();
     console.log('Webhook payload:', payload);
 
+    // Basic validation
+    if (!payload?.name || !payload?.email) {
+      return new Response(
+        JSON.stringify({ error: "Missing name or email" }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Insert attendee data
     const { data: attendee, error: attendeeError } = await supabase
       .from('attendees')
       .insert({
-        event_id: payload.event_id,
-        registration_id: payload.registration_id,
+        event_id: payload.event_id ?? 'agentjam-2025',
+        registration_id: payload.registration_id ?? `reg_${Date.now()}`,
         name: payload.name,
-        email: payload.email,
-        company: payload.company || null,
-        title: payload.title || null,
-        registered_at: payload.timestamp
+        email: payload.email.toLowerCase(),
+        company: payload.company ?? null,
+        title: payload.title ?? null,
+        registered_at: payload.timestamp ?? new Date().toISOString()
       })
       .select()
       .single();
