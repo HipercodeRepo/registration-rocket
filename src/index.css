@@ -1,15 +1,38 @@
 @tailwind base;
-@tailwind components;
+@tailwind components; 
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Event Intelligence Dashboard Design System - Professional Analytics Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
+    /* Core Brand Colors - Professional Blue Palette */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 215 25% 12%;
+    
+    /* Dashboard Specific Colors */
+    --dashboard-primary: 217 91% 60%;
+    --dashboard-primary-dark: 217 91% 45%;
+    --dashboard-accent: 197 92% 62%;
+    --dashboard-success: 142 71% 45%;
+    --dashboard-warning: 48 96% 53%;
+    --dashboard-danger: 0 84% 60%;
+    
+    /* Gradients for Visual Interest */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(197 92% 62%));
+    --gradient-secondary: linear-gradient(135deg, hsl(217 91% 95%), hsl(197 92% 95%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(217 91% 98%));
+    
+    /* Shadows & Effects */
+    --shadow-soft: 0 2px 8px hsl(217 91% 60% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(217 91% 60% / 0.12);
+    --shadow-large: 0 8px 32px hsl(217 91% 60% / 0.16);
+    --shadow-glow: 0 0 24px hsl(217 91% 60% / 0.3);
+    
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: all 0.15s ease-out;
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -17,17 +40,17 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217 91% 95%;
+    --secondary-foreground: 217 91% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 217 13% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 197 92% 62%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -100,6 +123,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+  
+  /* Dashboard Typography */
+  .dashboard-heading {
+    @apply text-3xl font-bold tracking-tight;
+  }
+  
+  .dashboard-subheading {
+    @apply text-xl font-semibold;
+  }
+  
+  .dashboard-metric {
+    @apply text-2xl font-bold;
+  }
+  
+  .dashboard-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+}
+
+/* Custom Dashboard Utilities */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  .shadow-dashboard {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-dashboard-hover {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .transition-dashboard {
+    transition: var(--transition-smooth);
   }
 }
