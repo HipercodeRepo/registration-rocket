@@ -8,6 +8,8 @@ import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
 import { NotificationsLog } from "@/components/dashboard/NotificationsLog";
 import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ApiTester } from "@/components/dashboard/ApiTester";
+import { ComprehensiveTestRunner } from "@/components/dashboard/ComprehensiveTestRunner";
+import { DevelopmentPlan } from "@/components/dashboard/DevelopmentPlan";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,12 +83,14 @@ const Dashboard = () => {
         <KPICards />
         
         <Tabs defaultValue="attendees" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-[700px]">
+          <TabsList className="grid w-full grid-cols-8 lg:w-[900px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="tester">Test Webhook</TabsTrigger>
             <TabsTrigger value="api-tester">API Tests</TabsTrigger>
+            <TabsTrigger value="pipeline-test">Pipeline Test</TabsTrigger>
+            <TabsTrigger value="dev-plan">Dev Plan</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
@@ -108,6 +112,14 @@ const Dashboard = () => {
           
           <TabsContent value="api-tester" className="space-y-6">
             <ApiTester />
+          </TabsContent>
+          
+          <TabsContent value="pipeline-test" className="space-y-6">
+            <ComprehensiveTestRunner />
+          </TabsContent>
+          
+          <TabsContent value="dev-plan" className="space-y-6">
+            <DevelopmentPlan />
           </TabsContent>
           
           <TabsContent value="reports" className="space-y-6">
