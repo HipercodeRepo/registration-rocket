@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { simulateLumaWebhook } from "@/lib/server-actions";
+import { simulateLumaWebhook, pullBrexExpenses, triggerEnrichment } from "@/lib/server-actions";
 
 interface TestResult {
   status: 'success' | 'error';
@@ -14,30 +14,30 @@ interface TestResult {
   attendee_id?: string;
 }
 
-  const sampleAttendees = [
-    {
-      name: "Sarah Chen",
-      email: "sarah.chen@stripe.com",
-      title: "VP Engineering", 
-      company: "Stripe"
-    },
+const sampleAttendees = [
   {
-    name: "Marcus Rodriguez", 
-    email: "m.rodriguez@startup.ai",
-    title: "Founder & CEO",
-    company: "Startup AI"
+    name: "Sarah Chen",
+    email: "sarah.chen@stripe.com",
+    title: "VP Engineering", 
+    company: "Stripe"
   },
   {
-    name: "Emily Thompson",
-    email: "emily@designstudio.com", 
-    title: "Creative Director",
-    company: "Design Studio"
+    name: "Brian Chesky", 
+    email: "brian@airbnb.com",
+    title: "Co-founder & CEO",
+    company: "Airbnb"
   },
   {
-    name: "David Kim",
-    email: "david.kim@enterprise.com",
-    title: "CTO", 
-    company: "Enterprise Solutions"
+    name: "Satya Nadella",
+    email: "satya@microsoft.com", 
+    title: "CEO",
+    company: "Microsoft"
+  },
+  {
+    name: "Jensen Huang",
+    email: "jensen@nvidia.com",
+    title: "Founder & CEO", 
+    company: "NVIDIA"
   }
 ];
 
@@ -113,16 +113,22 @@ export function WebhookTester() {
       if (result.success) {
         const newResult: TestResult = {
           status: 'success',
-          message: `Quick test: ${attendee.name} registered`,
+          message: `✅ ${attendee.name} registered → SixtyFour + MixRank enrichment triggered`,
           attendee_id: result.data?.attendee_id
         };
         setResults(prev => [newResult, ...prev.slice(0, 4)]);
         
         toast({
-          title: "Quick Test Successful",
-          description: `${attendee.name} added and enrichment triggered`,
+          title: "Full Pipeline Test Successful",
+          description: `${attendee.name} → Enrichment → Scoring → Notifications`,
         });
       } else {
+        const newResult: TestResult = {
+          status: 'error',
+          message: `❌ Test failed: ${result.error}`
+        };
+        setResults(prev => [newResult, ...prev.slice(0, 4)]);
+        
         toast({
           title: "Quick Test Failed",
           description: result.error,
@@ -130,9 +136,49 @@ export function WebhookTester() {
         });
       }
     } catch (error) {
+      const newResult: TestResult = {
+        status: 'error',
+        message: `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+      setResults(prev => [newResult, ...prev.slice(0, 4)]);
+      
       toast({
         title: "Error",
         description: "Quick test failed",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testBrexExpenses = async () => {
+    setIsLoading(true);
+    try {
+      const result = await pullBrexExpenses('agentjam-2025');
+      
+      if (result.success) {
+        const newResult: TestResult = {
+          status: 'success',
+          message: `💰 Brex API: $${result.data?.total_spent || 0} from ${result.data?.transaction_count || 0} transactions`
+        };
+        setResults(prev => [newResult, ...prev.slice(0, 4)]);
+        toast({
+          title: "Brex Test Successful",
+          description: `Pulled expense data from Brex API`,
+        });
+      } else {
+        throw new Error(result.error || 'Unknown error');
+      }
+    } catch (error: any) {
+      const newResult: TestResult = {
+        status: 'error',
+        message: `❌ Brex API failed: ${error.message}`
+      };
+      setResults(prev => [newResult, ...prev.slice(0, 4)]);
+      toast({
+        title: "Brex Test Failed",
+        description: error.message,
         variant: "destructive"
       });
     } finally {
@@ -203,25 +249,58 @@ export function WebhookTester() {
           </Button>
         </form>
 
-        {/* Quick Test Buttons */}
-        <div>
-          <Label className="text-sm font-medium">Quick Tests</Label>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {sampleAttendees.map((attendee, index) => (
+        {/* API Integration Tests */}
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Quick Registration Tests</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Tests full flow: Webhook → SixtyFour → MixRank → Scoring → Notifications
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {sampleAttendees.map((attendee, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickTest(attendee)}
+                  disabled={isLoading}
+                  className="justify-start text-left"
+                >
+                  <div className="truncate">
+                    <div className="font-medium">{attendee.name}</div>
+                    <div className="text-xs text-muted-foreground">{attendee.company}</div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <Label className="text-sm font-medium">API Tests</Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
               <Button
-                key={index}
-                variant="outline"
+                variant="secondary"
                 size="sm"
-                onClick={() => handleQuickTest(attendee)}
+                onClick={testBrexExpenses}
                 disabled={isLoading}
-                className="justify-start text-left"
               >
-                <div className="truncate">
-                  <div className="font-medium">{attendee.name}</div>
-                  <div className="text-xs text-muted-foreground">{attendee.title}</div>
-                </div>
+                💰 Test Brex
               </Button>
-            ))}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open('https://supabase.com/dashboard/project/vrgmphxnizephwqyduak/functions', '_blank')}
+              >
+                📊 View Logs
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.location.reload()}
+              >
+                🔄 Refresh Data
+              </Button>
+            </div>
           </div>
         </div>
 
