@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICards } from "@/components/dashboard/KPICards";
 import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
@@ -10,6 +11,8 @@ import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ApiTester } from "@/components/dashboard/ApiTester";
 import { ComprehensiveTestRunner } from "@/components/dashboard/ComprehensiveTestRunner";
 import { DevelopmentPlan } from "@/components/dashboard/DevelopmentPlan";
+import ContactEnrichmentTest from "@/components/onboarding/ContactEnrichmentTest";
+import SalesRepManager from "@/components/sales/SalesRepManager";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +22,7 @@ import type { User, Session } from '@supabase/supabase-js';
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -28,10 +32,12 @@ const Dashboard = () => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
         
         if (!session) {
           navigate('/auth');
+        } else {
+          // Fetch user profile when session is available
+          fetchProfile(session.user.id);
         }
       }
     );
@@ -40,15 +46,38 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
       
       if (!session) {
         navigate('/auth');
+      } else {
+        fetchProfile(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      setProfile(profileData);
+    } catch (error) {
+      console.log('No profile found, will show onboarding');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    if (user) {
+      fetchProfile(user.id);
+    }
+  };
 
   if (loading) {
     return (
@@ -75,6 +104,15 @@ const Dashboard = () => {
     return null; // Will redirect to auth
   }
 
+  // Show onboarding if user hasn't completed it
+  if (!profile?.onboarding_completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20 flex items-center justify-center p-4">
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -83,14 +121,15 @@ const Dashboard = () => {
         <KPICards />
         
         <Tabs defaultValue="attendees" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 lg:w-[900px]">
+          <TabsList className="grid w-full grid-cols-9 lg:w-[1100px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="enrichment-test">Test Enrichment</TabsTrigger>
+            <TabsTrigger value="sales-reps">Sales Team</TabsTrigger>
             <TabsTrigger value="tester">Test Webhook</TabsTrigger>
             <TabsTrigger value="api-tester">API Tests</TabsTrigger>
             <TabsTrigger value="pipeline-test">Pipeline Test</TabsTrigger>
-            <TabsTrigger value="dev-plan">Dev Plan</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
@@ -106,6 +145,14 @@ const Dashboard = () => {
             <ExpensesView />
           </TabsContent>
           
+          <TabsContent value="enrichment-test" className="space-y-6">
+            <ContactEnrichmentTest />
+          </TabsContent>
+          
+          <TabsContent value="sales-reps" className="space-y-6">
+            <SalesRepManager />
+          </TabsContent>
+          
           <TabsContent value="tester" className="space-y-6">
             <WebhookTester />
           </TabsContent>
@@ -116,10 +163,6 @@ const Dashboard = () => {
           
           <TabsContent value="pipeline-test" className="space-y-6">
             <ComprehensiveTestRunner />
-          </TabsContent>
-          
-          <TabsContent value="dev-plan" className="space-y-6">
-            <DevelopmentPlan />
           </TabsContent>
           
           <TabsContent value="reports" className="space-y-6">

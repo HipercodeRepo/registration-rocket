@@ -24,6 +24,7 @@ export type Database = {
           registered_at: string | null
           registration_id: string | null
           title: string | null
+          user_id: string | null
         }
         Insert: {
           company?: string | null
@@ -34,6 +35,7 @@ export type Database = {
           registered_at?: string | null
           registration_id?: string | null
           title?: string | null
+          user_id?: string | null
         }
         Update: {
           company?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           registered_at?: string | null
           registration_id?: string | null
           title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -54,6 +57,7 @@ export type Database = {
           enriched_at: string | null
           mixrank_json: Json | null
           person_json: Json | null
+          user_id: string | null
         }
         Insert: {
           attendee_id: string
@@ -61,6 +65,7 @@ export type Database = {
           enriched_at?: string | null
           mixrank_json?: Json | null
           person_json?: Json | null
+          user_id?: string | null
         }
         Update: {
           attendee_id?: string
@@ -68,6 +73,7 @@ export type Database = {
           enriched_at?: string | null
           mixrank_json?: Json | null
           person_json?: Json | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -87,6 +93,7 @@ export type Database = {
           raw: Json | null
           total_cents: number
           txn_count: number
+          user_id: string | null
         }
         Insert: {
           event_id: string
@@ -95,6 +102,7 @@ export type Database = {
           raw?: Json | null
           total_cents: number
           txn_count: number
+          user_id?: string | null
         }
         Update: {
           event_id?: string
@@ -103,35 +111,49 @@ export type Database = {
           raw?: Json | null
           total_cents?: number
           txn_count?: number
+          user_id?: string | null
         }
         Relationships: []
       }
       lead_scores: {
         Row: {
+          assigned_sales_rep_id: string | null
           attendee_id: string
           is_key_lead: boolean | null
           notification_ref: string | null
           notified_at: string | null
           reason: string | null
           score: number
+          user_id: string | null
         }
         Insert: {
+          assigned_sales_rep_id?: string | null
           attendee_id: string
           is_key_lead?: boolean | null
           notification_ref?: string | null
           notified_at?: string | null
           reason?: string | null
           score: number
+          user_id?: string | null
         }
         Update: {
+          assigned_sales_rep_id?: string | null
           attendee_id?: string
           is_key_lead?: boolean | null
           notification_ref?: string | null
           notified_at?: string | null
           reason?: string | null
           score?: number
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_scores_assigned_sales_rep_id_fkey"
+            columns: ["assigned_sales_rep_id"]
+            isOneToOne: false
+            referencedRelation: "sales_reps"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_scores_attendee_id_fkey"
             columns: ["attendee_id"]
@@ -150,6 +172,7 @@ export type Database = {
           message: string
           pylon_ref: string | null
           sent_at: string | null
+          user_id: string | null
         }
         Insert: {
           attendee_id?: string | null
@@ -159,6 +182,7 @@ export type Database = {
           message: string
           pylon_ref?: string | null
           sent_at?: string | null
+          user_id?: string | null
         }
         Update: {
           attendee_id?: string | null
@@ -168,6 +192,7 @@ export type Database = {
           message?: string
           pylon_ref?: string | null
           sent_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -178,6 +203,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_reps: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          id: string
+          luma_api_key: string | null
+          onboarding_completed: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string
+          luma_api_key?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string
+          luma_api_key?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -151,21 +151,41 @@ serve(async (req) => {
     );
 
     // Parse request
-    const { attendee_id } = await req.json();
-    console.log('Enriching attendee:', attendee_id);
+    const req_body = await req.json();
+    console.log('Request body:', JSON.stringify(req_body));
 
-    // Fetch attendee data
-    const { data: attendee, error: attendeeError } = await supabase
-      .from('attendees')
-      .select('*')
-      .eq('id', attendee_id)
-      .single();
+    let attendee: any;
+    
+    // Handle both direct attendee data and attendee_id lookup
+    if (req_body.attendee_id) {
+      const { data: attendeeData, error: attendeeError } = await supabase
+        .from('attendees')
+        .select('*')
+        .eq('id', req_body.attendee_id)
+        .single();
 
-    if (attendeeError || !attendee) {
-      console.error('Attendee not found:', attendeeError);
+      if (attendeeError || !attendeeData) {
+        console.error('Error fetching attendee:', attendeeError);
+        return new Response(
+          JSON.stringify({ error: 'Attendee not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        );
+      }
+      
+      attendee = attendeeData;
+    } else if (req_body.name && req_body.email) {
+      // Direct data provided (for testing)
+      attendee = {
+        id: req_body.attendee_id || `test-${Date.now()}`,
+        name: req_body.name,
+        email: req_body.email,
+        company: req_body.company,
+        user_id: req_body.user_id
+      };
+    } else {
       return new Response(
-        JSON.stringify({ error: 'Attendee not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing attendee_id or required attendee data (name, email)' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
@@ -193,6 +213,7 @@ serve(async (req) => {
       .from('enrichment')
       .upsert({
         attendee_id: attendee.id,
+        user_id: attendee.user_id,
         person_json: sixtyfourData,
         company_json: sixtyfourData?.company || null,
         mixrank_json: mixrankData,
@@ -220,6 +241,7 @@ serve(async (req) => {
       .from('lead_scores')
       .upsert({
         attendee_id: attendee.id,
+        user_id: attendee.user_id,
         score,
         reason,
         is_key_lead: isKeyLead
