@@ -14,7 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendees: {
+        Row: {
+          company: string | null
+          email: string
+          event_id: string
+          id: string
+          name: string
+          registered_at: string | null
+          registration_id: string | null
+          title: string | null
+        }
+        Insert: {
+          company?: string | null
+          email: string
+          event_id: string
+          id?: string
+          name: string
+          registered_at?: string | null
+          registration_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          company?: string | null
+          email?: string
+          event_id?: string
+          id?: string
+          name?: string
+          registered_at?: string | null
+          registration_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      enrichment: {
+        Row: {
+          attendee_id: string
+          company_json: Json | null
+          enriched_at: string | null
+          mixrank_json: Json | null
+          person_json: Json | null
+        }
+        Insert: {
+          attendee_id: string
+          company_json?: Json | null
+          enriched_at?: string | null
+          mixrank_json?: Json | null
+          person_json?: Json | null
+        }
+        Update: {
+          attendee_id?: string
+          company_json?: Json | null
+          enriched_at?: string | null
+          mixrank_json?: Json | null
+          person_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: true
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_expenses: {
+        Row: {
+          event_id: string
+          id: string
+          pulled_at: string | null
+          raw: Json | null
+          total_cents: number
+          txn_count: number
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          pulled_at?: string | null
+          raw?: Json | null
+          total_cents: number
+          txn_count: number
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          pulled_at?: string | null
+          raw?: Json | null
+          total_cents?: number
+          txn_count?: number
+        }
+        Relationships: []
+      }
+      lead_scores: {
+        Row: {
+          attendee_id: string
+          is_key_lead: boolean | null
+          notification_ref: string | null
+          notified_at: string | null
+          reason: string | null
+          score: number
+        }
+        Insert: {
+          attendee_id: string
+          is_key_lead?: boolean | null
+          notification_ref?: string | null
+          notified_at?: string | null
+          reason?: string | null
+          score: number
+        }
+        Update: {
+          attendee_id?: string
+          is_key_lead?: boolean | null
+          notification_ref?: string | null
+          notified_at?: string | null
+          reason?: string | null
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_scores_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: true
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          attendee_id: string | null
+          channel: string
+          destination: string
+          id: string
+          message: string
+          pylon_ref: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          attendee_id?: string | null
+          channel: string
+          destination: string
+          id?: string
+          message: string
+          pylon_ref?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          attendee_id?: string | null
+          channel?: string
+          destination?: string
+          id?: string
+          message?: string
+          pylon_ref?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
