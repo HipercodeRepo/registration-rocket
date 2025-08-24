@@ -12,7 +12,7 @@ import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ApiTester } from "@/components/dashboard/ApiTester";
 import { ComprehensiveTestRunner } from "@/components/dashboard/ComprehensiveTestRunner";
 import { DevelopmentPlan } from "@/components/dashboard/DevelopmentPlan";
-import ContactEnrichmentTest from "@/components/onboarding/ContactEnrichmentTest";
+import { EnrichmentDebugger } from "@/components/dashboard/EnrichmentDebugger";
 import SalesRepManager from "@/components/sales/SalesRepManager";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
@@ -156,7 +156,7 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="enrichment-test" className="space-y-6">
-            <ContactEnrichmentTest />
+            <EnrichmentDebugger />
           </TabsContent>
           
           <TabsContent value="sales-reps" className="space-y-6">
