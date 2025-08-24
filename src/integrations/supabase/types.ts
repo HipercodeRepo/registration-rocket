@@ -57,7 +57,7 @@ export type Database = {
           enriched_at: string | null
           mixrank_json: Json | null
           person_json: Json | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           attendee_id: string
@@ -65,7 +65,7 @@ export type Database = {
           enriched_at?: string | null
           mixrank_json?: Json | null
           person_json?: Json | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           attendee_id?: string
@@ -73,7 +73,7 @@ export type Database = {
           enriched_at?: string | null
           mixrank_json?: Json | null
           person_json?: Json | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -82,6 +82,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "attendees"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrichment_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -93,7 +100,7 @@ export type Database = {
           raw: Json | null
           total_cents: number
           txn_count: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           event_id: string
@@ -102,7 +109,7 @@ export type Database = {
           raw?: Json | null
           total_cents: number
           txn_count: number
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           event_id?: string
@@ -111,9 +118,17 @@ export type Database = {
           raw?: Json | null
           total_cents?: number
           txn_count?: number
-          user_id?: string | null
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_event_expenses_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       lead_scores: {
         Row: {
@@ -124,7 +139,7 @@ export type Database = {
           notified_at: string | null
           reason: string | null
           score: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           assigned_sales_rep_id?: string | null
@@ -134,7 +149,7 @@ export type Database = {
           notified_at?: string | null
           reason?: string | null
           score: number
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           assigned_sales_rep_id?: string | null
@@ -144,9 +159,16 @@ export type Database = {
           notified_at?: string | null
           reason?: string | null
           score?: number
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_lead_scores_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "lead_scores_assigned_sales_rep_id_fkey"
             columns: ["assigned_sales_rep_id"]
@@ -172,7 +194,7 @@ export type Database = {
           message: string
           pylon_ref: string | null
           sent_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           attendee_id?: string | null
@@ -182,7 +204,7 @@ export type Database = {
           message: string
           pylon_ref?: string | null
           sent_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           attendee_id?: string | null
@@ -192,9 +214,16 @@ export type Database = {
           message?: string
           pylon_ref?: string | null
           sent_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_notifications_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "notifications_attendee_id_fkey"
             columns: ["attendee_id"]

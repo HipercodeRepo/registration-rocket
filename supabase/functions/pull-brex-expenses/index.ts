@@ -38,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    const { event_id, start_date, end_date } = await req.json();
+    const { event_id, start_date, end_date, user_id } = await req.json();
     console.log('Pulling Brex expenses for event:', event_id);
 
     // Build query parameters
@@ -124,6 +124,7 @@ serve(async (req) => {
       .from('event_expenses')
       .upsert({
         event_id: event_id,
+        user_id: user_id,
         total_cents: totalCents,
         txn_count: eventTransactions.length,
         raw: {

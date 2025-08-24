@@ -124,6 +124,7 @@ ${companyInfo?.revenue ? `• Revenue: ${companyInfo.revenue}` : ''}
       .from('notifications')
       .insert({
         attendee_id: attendee.id,
+        user_id: attendee.user_id,
         channel: 'slack',
         destination: '#sales',
         message: message,
