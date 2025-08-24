@@ -23,11 +23,37 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Get the authorization header to extract user ID
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with user authentication
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
     );
+
+    // Get the current user from the token
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Error getting user:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Parse the incoming webhook payload
     const payload: LumaWebhookPayload = await req.json();
@@ -44,7 +70,7 @@ serve(async (req) => {
       );
     }
 
-    // Insert attendee data into database
+    // Insert attendee data into database with user association
     const { data: attendee, error: insertError } = await supabase
       .from('attendees')
       .insert({
@@ -54,6 +80,7 @@ serve(async (req) => {
         email: payload.email,
         company: payload.company || null,
         title: payload.title || null,
+        user_id: user.id, // Associate with authenticated user
         registered_at: payload.timestamp || new Date().toISOString()
       })
       .select()
