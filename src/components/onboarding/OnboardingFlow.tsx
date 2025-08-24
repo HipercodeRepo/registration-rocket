@@ -168,6 +168,17 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Enter your Luma API key to automatically sync event registrations
                   </p>
+                  
+                  <div className="p-3 mb-4 border border-blue-200 bg-blue-50 rounded-lg">
+                    <h5 className="text-sm font-medium text-blue-900 mb-2">How to find your Luma API Key:</h5>
+                    <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Go to your Luma Account</li>
+                      <li>Under Profile - select the Calendar you want to integrate</li>
+                      <li>Go to Settings → Options</li>
+                      <li>Click to copy the API KEY</li>
+                    </ol>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="luma-key">Luma API Key</Label>
                     <Input
