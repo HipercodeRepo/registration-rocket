@@ -25,11 +25,26 @@ const AuthPage = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('AuthPage: Initial session check:', !!session);
       if (session?.user) {
+        console.log('AuthPage: User already logged in, redirecting to dashboard');
         navigate("/dashboard");
       }
     };
     checkUser();
+    
+    // Also listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('AuthPage: Auth state change:', event, !!session);
+        if (session?.user) {
+          console.log('AuthPage: User authenticated, redirecting to dashboard');
+          navigate("/dashboard");
+        }
+      }
+    );
+    
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleEmailAuth = async (type: 'signin' | 'signup') => {

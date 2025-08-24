@@ -32,20 +32,24 @@ const Dashboard = () => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (!session) {
           navigate('/auth');
         } else {
-          // Fetch user profile when session is available
-          fetchProfile(session.user.id);
+          // Defer profile fetching to avoid conflicts
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
         }
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', !!session);
       setSession(session);
       setUser(session?.user ?? null);
       
