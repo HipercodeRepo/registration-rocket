@@ -59,13 +59,18 @@ export function AttendeeRegistration() {
     setSteps([]);
 
     try {
-      // Step 1: Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      // Step 1: Ensure user is authenticated
+      updateStep("Authentication", 'running', "Verifying user authentication...");
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        updateStep("Authentication", 'error', "User not authenticated. Please log in first.", userError);
+        throw new Error('User not authenticated. Please log in first.');
       }
 
-      // Step 2: Simulate attendee registration (like Luma webhook would do)
+      updateStep("Authentication", 'success', `✅ Authenticated as ${user.email}`);
+
+      // Step 2: Register attendee via webhook (now requires authentication)
       updateStep("Registration", 'running', "Registering new attendee...");
       
       const attendeeData = {
@@ -79,7 +84,9 @@ export function AttendeeRegistration() {
       };
 
       console.log('Registering attendee with data:', attendeeData);
+      console.log('User authenticated:', user.id);
 
+      // The supabase client automatically includes auth headers for authenticated users
       const { data: webhookResult, error: webhookError } = await supabase.functions.invoke('luma-webhook', {
         body: attendeeData
       });
@@ -89,6 +96,11 @@ export function AttendeeRegistration() {
       if (webhookError) {
         updateStep("Registration", 'error', `Registration failed: ${webhookError.message}`, webhookError);
         throw new Error(`Registration failed: ${webhookError.message}`);
+      }
+
+      if (!webhookResult?.success || !webhookResult?.attendee_id) {
+        updateStep("Registration", 'error', "Registration failed: Invalid response from webhook", webhookResult);
+        throw new Error("Registration failed: Invalid response from webhook");
       }
 
       updateStep("Registration", 'success', `✅ ${name} registered successfully!`, webhookResult);
