@@ -1,15 +1,21 @@
-import { BarChart3, Users, Bell, CreditCard, Home } from "lucide-react";
+import { BarChart3, Users, Bell, CreditCard, Home, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface SidebarProps {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
 const navigation = [
-  { name: "Overview", href: "#", icon: Home, current: true },
-  { name: "Attendees", href: "#attendees", icon: Users, current: false },
-  { name: "Notifications", href: "#notifications", icon: Bell, current: false },
-  { name: "Expenses", href: "#expenses", icon: CreditCard, current: false },
-  { name: "Analytics", href: "#analytics", icon: BarChart3, current: false },
+  { name: "Overview", tab: "overview", icon: Home },
+  { name: "Attendees", tab: "attendees", icon: Users },
+  { name: "Notifications", tab: "notifications", icon: Bell },
+  { name: "Expenses", tab: "expenses", icon: CreditCard },
+  { name: "Sales Team", tab: "sales-reps", icon: UserCheck },
+  { name: "Analytics", tab: "reports", icon: BarChart3 },
 ];
 
-export function Sidebar() {
+export function Sidebar({ activeTab = "attendees", onTabChange }: SidebarProps) {
   return (
     <div className="w-64 bg-gradient-card border-r shadow-dashboard flex flex-col">
       <div className="p-6">
@@ -28,18 +34,18 @@ export function Sidebar() {
         <ul className="space-y-1">
           {navigation.map((item) => (
             <li key={item.name}>
-              <a
-                href={item.href}
+              <button
+                onClick={() => onTabChange?.(item.tab)}
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-dashboard",
-                  item.current
+                  "w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-dashboard",
+                  activeTab === item.tab
                     ? "bg-primary text-primary-foreground shadow-dashboard"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >
                 <item.icon className="w-5 h-5 mr-3" />
                 {item.name}
-              </a>
+              </button>
             </li>
           ))}
         </ul>

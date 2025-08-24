@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICards } from "@/components/dashboard/KPICards";
+import { OverviewTab } from "@/components/dashboard/OverviewTab";
 import { AttendeesTable } from "@/components/dashboard/AttendeesTable";
 import { NotificationsLog } from "@/components/dashboard/NotificationsLog";
 import { WebhookTester } from "@/components/dashboard/WebhookTester";
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("attendees");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,13 +116,13 @@ const Dashboard = () => {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
       <div className="space-y-8">
         <DashboardHeader />
         
         <KPICards />
         
-        <Tabs defaultValue="attendees" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-9 lg:w-[1100px]">
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -132,6 +134,10 @@ const Dashboard = () => {
             <TabsTrigger value="pipeline-test">Pipeline Test</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="overview" className="space-y-6">
+            <OverviewTab />
+          </TabsContent>
           
           <TabsContent value="attendees" className="space-y-6">
             <AttendeesTable />
