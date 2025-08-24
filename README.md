@@ -1,4 +1,4 @@
-Event Intelligence Agent — Lovable Project
+# Event Intelligence Agent — Lovable Project
 
 Live Project URL: https://registration-rocket.lovable.app/
 
