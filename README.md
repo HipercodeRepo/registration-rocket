@@ -1,4 +1,5 @@
-# Event Intelligence Agent — Lovable Project
+# Event Intelligence Agent — Brex Agent Jam Hackathon
+by the Registration Rocket team including Kaushik Bhatta (KB).
 
 Live Project URL: https://registration-rocket.lovable.app/
 
