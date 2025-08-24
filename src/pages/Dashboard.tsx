@@ -12,7 +12,7 @@ import { WebhookTester } from "@/components/dashboard/WebhookTester";
 import { ApiTester } from "@/components/dashboard/ApiTester";
 import { ComprehensiveTestRunner } from "@/components/dashboard/ComprehensiveTestRunner";
 import { DevelopmentPlan } from "@/components/dashboard/DevelopmentPlan";
-import { EnrichmentDebugger } from "@/components/dashboard/EnrichmentDebugger";
+import { AttendeeRegistration } from "@/components/dashboard/AttendeeRegistration";
 import SalesRepManager from "@/components/sales/SalesRepManager";
 import { ExpensesView } from "@/components/dashboard/ExpensesView";
 import { ReportGenerator } from "@/components/dashboard/ReportGenerator";
@@ -131,7 +131,7 @@ const Dashboard = () => {
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="enrichment-test">Test Enrichment</TabsTrigger>
+            <TabsTrigger value="enrichment-test">Add Attendee</TabsTrigger>
             <TabsTrigger value="sales-reps">Sales Team</TabsTrigger>
             <TabsTrigger value="tester">Test Webhook</TabsTrigger>
             <TabsTrigger value="api-tester">API Tests</TabsTrigger>
@@ -156,7 +156,7 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="enrichment-test" className="space-y-6">
-            <EnrichmentDebugger />
+            <AttendeeRegistration />
           </TabsContent>
           
           <TabsContent value="sales-reps" className="space-y-6">
