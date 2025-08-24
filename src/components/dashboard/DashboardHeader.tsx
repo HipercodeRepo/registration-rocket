@@ -64,7 +64,12 @@ export function DashboardHeader() {
           <RefreshCw className="h-4 w-4 mr-2" />
           Sync Data
         </Button>
-        <Button variant="outline" size="sm" className="border-border/50">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="border-border/50"
+          onClick={() => navigate('/settings')}
+        >
           <Settings className="h-4 w-4 mr-2" />
           Settings
         </Button>
@@ -98,7 +103,7 @@ export function DashboardHeader() {
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               Account Settings
             </DropdownMenuItem>
