@@ -61,10 +61,6 @@ Luma (registration) ──▶ Webhook / Poller
                            ▼
                 Fondo (optional accounting)
 
-🔑 Environment Variables
-
-Create a .env (local) and set the same secrets in Lovable → Project → Settings → Environment.
-
 # Supabase
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
