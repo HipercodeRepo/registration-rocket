@@ -13,13 +13,14 @@ interface OnboardingFlowProps {
 }
 
 const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
-  const [step, setStep] = useState<'welcome' | 'connect' | 'complete'>('welcome');
+  const [step, setStep] = useState<'welcome' | 'connect' | 'brex' | 'complete'>('welcome');
   const [companyName, setCompanyName] = useState('');
   const [lumaApiKey, setLumaApiKey] = useState('');
+  const [brexApiKey, setBrexApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSaveProfile = async (skipLuma = false) => {
+  const handleSaveProfile = async (skipLuma = false, skipBrex = false) => {
     try {
       setLoading(true);
       
@@ -32,6 +33,7 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           user_id: session.user.id,
           company_name: companyName,
           luma_api_key: skipLuma ? null : lumaApiKey,
+          brex_api_key: skipBrex ? null : brexApiKey,
           onboarding_completed: true
         });
 
@@ -193,15 +195,15 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
                 <div className="flex gap-3">
                   <Button 
-                    onClick={() => handleSaveProfile()} 
+                    onClick={() => setStep('brex')} 
                     disabled={loading || !lumaApiKey.trim()}
                     className="flex-1"
                   >
-                    {loading ? "Connecting..." : "Connect Luma"}
+                    Continue with Luma
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSaveProfile(true)}
+                    onClick={() => setStep('brex')}
                     disabled={loading}
                   >
                     Skip for Now
@@ -243,15 +245,73 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
                 <Button 
                   variant="outline" 
-                  onClick={() => handleSaveProfile(true)}
+                  onClick={() => setStep('brex')}
                   disabled={loading}
                   className="w-full"
                 >
-                  Skip and Complete Setup
+                  Continue to Next Step
                 </Button>
               </div>
             </TabsContent>
           </Tabs>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (step === 'brex') {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Connect Brex (Optional)</CardTitle>
+          <CardDescription>
+            Connect your Brex account to automatically track event expenses and calculate cost-per-lead
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="p-4 border rounded-lg bg-muted/50">
+            <h4 className="font-medium mb-2">Brex API Integration</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add your Brex API key to automatically pull expense data for events
+            </p>
+            
+            <div className="p-3 mb-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <h5 className="text-sm font-medium text-blue-900 mb-2">How to get your Brex API Key:</h5>
+              <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                <li>Visit <a href="https://developer.brex.com/docs/authentication/" target="_blank" rel="noopener noreferrer" className="underline">Brex Developer Authentication</a></li>
+                <li>Follow the guide to generate your API credentials</li>
+                <li>Copy your API token</li>
+              </ol>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brex-key">Brex API Key</Label>
+              <Input
+                id="brex-key"
+                type="password"
+                placeholder="Enter your Brex API key"
+                value={brexApiKey}
+                onChange={(e) => setBrexApiKey(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => handleSaveProfile(lumaApiKey ? false : true, false)} 
+              disabled={loading || !brexApiKey.trim()}
+              className="flex-1"
+            >
+              {loading ? "Saving..." : "Connect Brex & Complete"}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleSaveProfile(lumaApiKey ? false : true, true)}
+              disabled={loading}
+            >
+              Skip and Complete
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

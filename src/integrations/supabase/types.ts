@@ -233,6 +233,7 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          brex_api_key: string | null
           company_name: string | null
           created_at: string | null
           id: string
@@ -242,6 +243,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          brex_api_key?: string | null
           company_name?: string | null
           created_at?: string | null
           id?: string
@@ -251,6 +253,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          brex_api_key?: string | null
           company_name?: string | null
           created_at?: string | null
           id?: string
