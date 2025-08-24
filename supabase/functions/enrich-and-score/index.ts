@@ -33,7 +33,9 @@ function calculateLeadScore(person: any, company: any, attendee: AttendeeData): 
   }
 
   // Company size scoring (from MixRank or SixtyFour)
-  const employeeCount = company?.employee_count || company?.employees || 0;
+  const employeeCount = company?.employee_count || company?.employees || 
+                       person?.company_size || 
+                       (typeof person?.company_size === 'string' && parseInt(person.company_size)) || 0;
   if (employeeCount >= 1000) {
     score += 4;
     reasons.push('Large company (1000+ employees)');
@@ -45,8 +47,8 @@ function calculateLeadScore(person: any, company: any, attendee: AttendeeData): 
     reasons.push('Growing company (50+ employees)');
   }
 
-  // Industry targeting
-  const industry = (company?.industry || '').toLowerCase();
+  // Industry targeting (check both MixRank and SixtyFour industry data)
+  const industry = (company?.industry || person?.industry || '').toLowerCase();
   const targetIndustries = ['fintech', 'saas', 'technology', 'software', 'ai', 'machine learning', 'data'];
   if (targetIndustries.some(target => industry.includes(target))) {
     score += 2;
@@ -61,8 +63,8 @@ function calculateLeadScore(person: any, company: any, attendee: AttendeeData): 
     reasons.push('Professional email domain');
   }
 
-  // Social/professional verification
-  if (person?.linkedin_url || person?.twitter_url) {
+  // Social/professional verification (LinkedIn, etc.)
+  if (person?.linkedin || person?.linkedin_url || person?.website) {
     score += 1;
     reasons.push('Social profile verified');
   }
@@ -80,7 +82,7 @@ function calculateLeadScore(person: any, company: any, attendee: AttendeeData): 
 }
 
 // SixtyFour API enrichment
-async function sixtyfourEnrichLead(input: { name?: string; email?: string; company?: string }) {
+async function sixtyfourEnrichLead(input: { name?: string; email?: string; company?: string; title?: string }) {
   const apiKey = Deno.env.get('SIXTYFOUR_KEY');
   if (!apiKey) {
     console.warn('SixtyFour API key not configured');
@@ -88,21 +90,56 @@ async function sixtyfourEnrichLead(input: { name?: string; email?: string; compa
   }
 
   try {
-    const response = await fetch('https://api.sixtyfour.ai/enrich/lead', {
+    // Prepare SixtyFour API request according to their docs
+    const requestBody = {
+      lead_info: {
+        name: input.name || '',
+        title: input.title || '',
+        company: input.company || '',
+        email: input.email || '',
+        // Add empty fields to help with enrichment
+        linkedin: '',
+        location: '',
+        website: ''
+      },
+      struct: {
+        name: "The individual's full name",
+        email: "The individual's email address", 
+        company: "The company the individual is associated with",
+        title: "The individual's job title",
+        linkedin: "LinkedIn URL for the person",
+        website: "Company website URL",
+        location: "The individual's location and/or company location",
+        industry: "Industry the person operates in",
+        phone: "Phone number if available",
+        company_size: "Number of employees at the company"
+      }
+    };
+
+    console.log('SixtyFour API request:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch('https://api.sixtyfour.ai/enrich-lead', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(input)
+      body: JSON.stringify(requestBody)
     });
 
+    console.log('SixtyFour API response status:', response.status);
+
     if (!response.ok) {
-      console.error('SixtyFour API error:', response.status, await response.text());
+      const errorText = await response.text();
+      console.error('SixtyFour API error:', response.status, errorText);
       return null;
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('SixtyFour API response data:', JSON.stringify(data, null, 2));
+    
+    // Return the structured data part which contains the enriched info
+    return data.structured_data || data;
   } catch (error) {
     console.error('SixtyFour enrichment failed:', error);
     return null;
@@ -195,7 +232,8 @@ serve(async (req) => {
     const sixtyfourData = await sixtyfourEnrichLead({
       name: attendee.name,
       email: attendee.email,
-      company: attendee.company
+      company: attendee.company,
+      title: attendee.title
     });
 
     // Enrich with MixRank if we have company domain

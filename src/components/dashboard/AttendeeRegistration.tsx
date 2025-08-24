@@ -78,9 +78,13 @@ export function AttendeeRegistration() {
         timestamp: new Date().toISOString()
       };
 
+      console.log('Registering attendee with data:', attendeeData);
+
       const { data: webhookResult, error: webhookError } = await supabase.functions.invoke('luma-webhook', {
         body: attendeeData
       });
+
+      console.log('Webhook result:', webhookResult, 'Error:', webhookError);
 
       if (webhookError) {
         updateStep("Registration", 'error', `Registration failed: ${webhookError.message}`, webhookError);
